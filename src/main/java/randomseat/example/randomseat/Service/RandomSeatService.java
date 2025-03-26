@@ -4,49 +4,37 @@ import org.springframework.stereotype.Service;
 import randomseat.example.randomseat.Dto.SeatRequest;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 public class RandomSeatService {
 
     public Map<Integer, String> assign(SeatRequest request) {
         List<String> names = new ArrayList<>(request.getNames());
-        Map<String, Integer> fixed = request.getFixed_seats() != null ? request.getFixed_seats() : new HashMap<>();
+        Map<String, Integer> fixed = request.getFixedSeats();
 
-        int totalSeats = 30;
-        List<Integer> allSeats = new ArrayList<>();
-        for (int i = 1; i <= totalSeats; i++) {
-            allSeats.add(i);
+        // 1. 고정 좌석 제거 (랜덤 대상에서)
+        if (fixed != null) {
+            names.removeAll(fixed.keySet());
         }
 
-        Set<Integer> usedSeats = new HashSet<>(fixed.values());
+        // 2. 좌석 번호 shuffle
+        List<Integer> seats = IntStream.rangeClosed(1, 30).boxed().collect(Collectors.toList());
+        Collections.shuffle(seats);
 
-        List<Integer> available = new ArrayList<>();
-        for (int seat : allSeats) {
-            if (!usedSeats.contains(seat)) {
-                available.add(seat);
+        // 3. 고정 좌석 먼저 배치
+        Map<Integer, String> result = new HashMap<>();
+        if (fixed != null) {
+            for (Map.Entry<String, Integer> entry : fixed.entrySet()) {
+                result.put(entry.getValue(), entry.getKey());
+                seats.remove(entry.getValue()); // 중복 방지
             }
         }
 
-        Map<Integer, String> assigned = new HashMap<>();
-        for (Map.Entry<String, Integer> entry : fixed.entrySet()) {
-            assigned.put(entry.getValue(), entry.getKey());
-        }
-
-        names.removeAll(fixed.keySet());
-        Collections.shuffle(names);
-
-        if (names.size() > available.size()) {
-            throw new RuntimeException("좌석이 부족합니다.");
-        }
-
+        // 4. 남은 이름 → 남은 좌석에 랜덤 배정
         for (int i = 0; i < names.size(); i++) {
-            assigned.put(available.get(i), names.get(i));
-        }
-
-        // 결과 정렬
-        Map<Integer, String> result = new TreeMap<>();
-        for (int seat : allSeats) {
-            result.put(seat, assigned.getOrDefault(seat, ""));
+            result.put(seats.get(i), names.get(i));
         }
 
         return result;

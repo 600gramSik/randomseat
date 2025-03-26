@@ -11,6 +11,6 @@ import java.util.Map;
 @Setter
 public class SeatRequest {
     private List<String> names;
-    private Map<String, Integer> fixed_seats;
+    private Map<String, Integer> fixedSeats;
 
 }
